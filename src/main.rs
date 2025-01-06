@@ -1,10 +1,15 @@
 // disable console on windows for release builds
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+mod client;
+mod server;
+
 use bevy::prelude::*;
 use bevy_asset_loader::prelude::*;
 use bevy_editor_pls::EditorPlugin;
 use bevy_embedded_assets::EmbeddedAssetPlugin;
+use client::ClientPlugin;
+use server::ServerPlugin;
 
 fn main() {
     App::new()
@@ -32,6 +37,8 @@ fn main() {
                 }),
             EditorPlugin::default(),
         ))
+        .add_plugins(ClientPlugin)
+        .add_plugins(ServerPlugin)
         .init_state::<AppState>()
         .add_loading_state(
             LoadingState::new(AppState::AssetLoading)
@@ -39,7 +46,6 @@ fn main() {
                 .load_collection::<GameAssets>(),
         )
         .add_systems(Startup, (spawn_2d_camera,))
-        .add_systems(OnExit(AppState::AssetLoading), spawn_player)
         .add_systems(Update, move_player.run_if(in_state(AppState::Main)))
         .run();
 }
@@ -69,18 +75,8 @@ impl Default for Player {
 }
 
 fn spawn_2d_camera(mut commands: Commands) {
+    info!("Creating camera...");
     commands.spawn(Camera2dBundle { ..default() });
-}
-
-fn spawn_player(mut commands: Commands, game_assets: Res<GameAssets>) {
-    commands.spawn((
-        Name::new("Player"),
-        Player::default(),
-        SpriteBundle {
-            texture: game_assets.ball.clone(),
-            ..default()
-        },
-    ));
 }
 
 fn move_player(
